@@ -1,0 +1,14 @@
+{
+    "name": "ElectronDynamics.Task",
+    "rootNamespace": "ElectronDynamics.Task",
+    "references": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": true
+}

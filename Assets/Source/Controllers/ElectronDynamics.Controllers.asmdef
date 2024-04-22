@@ -1,0 +1,17 @@
+{
+    "name": "ElectronDynamics.Controllers",
+    "rootNamespace": "ElectronDynamics.Controllers",
+    "references": [
+        "GUID:4717350c8c8a48d4895ad78d138828e4",
+        "GUID:bef226a65acfbaf468fbf898ac61538b"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

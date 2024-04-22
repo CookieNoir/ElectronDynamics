@@ -7,6 +7,8 @@ namespace ElectronDynamics.ViewportNavigation
         [SerializeField] private Transform _targetTransform;
         [SerializeField, Min(0f)] private float _linearSpeed = 1f;
         [SerializeField, Min(0f)] private float _angularSpeed = 120f;
+        [SerializeField] private Vector3 _positionLowerBounds = -Vector3.one;
+        [SerializeField] private Vector3 _positionUpperBounds = 2f * Vector3.one;
         private Vector3 _positionOffset;
         private Vector2 _rotationOffset;
 
@@ -84,6 +86,11 @@ namespace ElectronDynamics.ViewportNavigation
             }
             float speed = deltaTime * _linearSpeed;
             _targetTransform.Translate(speed * _positionOffset);
+            Vector3 localPosition = _targetTransform.localPosition;
+            float x = Mathf.Clamp(localPosition.x, _positionLowerBounds.x, _positionUpperBounds.x);
+            float y = Mathf.Clamp(localPosition.y, _positionLowerBounds.y, _positionUpperBounds.y);
+            float z = Mathf.Clamp(localPosition.z, _positionLowerBounds.z, _positionUpperBounds.z);
+            _targetTransform.localPosition = new Vector3(x, y, z);
             _positionOffset = Vector3.zero;
         }
 

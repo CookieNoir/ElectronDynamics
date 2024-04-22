@@ -89,7 +89,7 @@ namespace ElectronDynamics.Task
             double max = _variables.MagnetRadius;
             for (int i = 0; i < Ne; ++i)
             {
-                var position = new EdVector3(GetRandomValue(min, max), GetRandomValue(min, max), 0.0);
+                var position = new EdVector3(GetRandomValue(min, max), GetRandomValue(min, max), GetRandomValue(min, max));
                 var velocity = GetV(masses[i]);
                 samples[i] = new Sample(position, velocity);
             }

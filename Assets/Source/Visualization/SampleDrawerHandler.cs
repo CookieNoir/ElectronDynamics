@@ -2,6 +2,8 @@ using ElectronDynamics.Task;
 using ElectronDynamics.Task.UnityExtensions;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using TMPro;
 using UnityEngine;
 using UnityEngine.Pool;
 
@@ -11,9 +13,17 @@ namespace ElectronDynamics.Visualization
     {
         [SerializeField] private GameObject _sampleDrawer;
         [SerializeField] private Transform _instanceParent;
-        private IObjectPool<SampleDrawer> _drawersPool;
-        private IList<SampleDrawer> _sampleDrawers;
+        [SerializeField] private bool _ignoreLastSample = true;
+        [SerializeField] private Transform _axisXBar;
+        [SerializeField] private TMP_Text _axisXRangeText;
+        [SerializeField] private Transform _axisYBar;
+        [SerializeField] private TMP_Text _axisYRangeText;
+        [SerializeField] private Transform _axisZBar;
+        [SerializeField] private TMP_Text _axisZRangeText;
+        private ObjectPool<SampleDrawer> _drawersPool;
+        private List<SampleDrawer> _sampleDrawers;
         private bool _isPoolCreated = false;
+        private IFormatProvider _formatProvider = CultureInfo.InvariantCulture.NumberFormat;
 
         private void Awake()
         {
@@ -49,25 +59,51 @@ namespace ElectronDynamics.Visualization
                 ClearDrawers();
                 return;
             }
-            var (minBounds, maxBounds) = GetBounds(samples);
-            if (minBounds == maxBounds)
+            int samplesCount = samples.Length;
+            if (_ignoreLastSample)
+            {
+                samplesCount--;
+            }
+            if (samplesCount == 0)
             {
                 ClearDrawers();
                 return;
             }
-            int samplesCount = samples.Length;
-            double multiplier = 1d / (maxBounds.X - minBounds.X);
+            var (minBounds, maxBounds) = GetBoundsByPosition(samples, samplesCount);
+            double maxExtents = GetBoundsMaxExtents(minBounds, maxBounds);
+            var (minCubeBounds, maxCubeBounds) = GetBoundsWithEqualExtents(minBounds, maxBounds, maxExtents);
+            if (minCubeBounds == maxCubeBounds)
+            {
+                ClearDrawers();
+                return;
+            }
+            double multiplier = 1d / (maxCubeBounds.X - minCubeBounds.X);
             SetDrawersCount(samplesCount);
             for (int i = 0; i < samplesCount; ++i)
             {
                 var sample = samples[i];
                 var position = sample.Position;
                 var velocity = sample.Velocity;
-                Vector3 scaledPosition = (multiplier * (position - minBounds)).ToVector3();
+                Vector3 scaledPosition = (multiplier * (position - minCubeBounds)).ToVector3();
                 Vector3 scaledVelocity = velocity.ToVector3();
                 var drawer = _sampleDrawers[i];
                 drawer.SetValues(scaledPosition, scaledVelocity);
             }
+            DrawAxisBars(minBounds, maxBounds);
+        }
+
+        private void DrawAxisBars(EdVector3 minBounds, EdVector3 maxBounds)
+        {
+            double xRange = maxBounds.X - minBounds.X;
+            double yRange = maxBounds.Y - minBounds.Y;
+            double zRange = maxBounds.Z - minBounds.Z;
+            double maxRange = Math.Max(xRange, Math.Max(yRange, zRange));
+            _axisXBar.localScale = new Vector3(1f, (float)(xRange / maxRange), 1f);
+            _axisXRangeText.SetText(xRange.ToString(_formatProvider));
+            _axisYBar.localScale = new Vector3(1f, (float)(yRange / maxRange), 1f);
+            _axisYRangeText.SetText(yRange.ToString(_formatProvider));
+            _axisZBar.localScale = new Vector3(1f, (float)(zRange / maxRange), 1f);
+            _axisZRangeText.SetText(zRange.ToString(_formatProvider));
         }
 
         private void SetDrawersCount(int count)
@@ -90,7 +126,7 @@ namespace ElectronDynamics.Visualization
             {
                 for (int i = drawersToAdd; i < 0; ++i)
                 {
-                    int last = _sampleDrawers.Count;
+                    int last = _sampleDrawers.Count - 1;
                     var drawer = _sampleDrawers[last];
                     _sampleDrawers.RemoveAt(last);
                     _drawersPool.Release(drawer);
@@ -104,13 +140,18 @@ namespace ElectronDynamics.Visualization
             {
                 return;
             }
-            _drawersPool.Clear();
-            _sampleDrawers.Clear();
+            _drawersPool?.Clear();
+            _sampleDrawers?.Clear();
+        }
+
+        private void OnDisable()
+        {
+            ClearPool();
         }
 
         private void OnDestroy()
         {
-            ClearPool();
+            _drawersPool?.Dispose();
         }
 
         #region ObjectPool Functions
@@ -143,14 +184,14 @@ namespace ElectronDynamics.Visualization
 
         #region Bounds Receivers
 
-        private static (EdVector3, EdVector3) GetBounds(Sample[] samples)
+        private static (EdVector3, EdVector3) GetBounds(Sample[] samples, int samplesCount)
         {
-            var (minBounds, maxBounds) = GetBoundsByPosition(samples);
+            var (minBounds, maxBounds) = GetBoundsByPosition(samples, samplesCount);
             double maxExtents = GetBoundsMaxExtents(minBounds, maxBounds);
             return GetBoundsWithEqualExtents(minBounds, maxBounds, maxExtents);
         }
 
-        private static (EdVector3, EdVector3) GetBoundsByPosition(Sample[] samples)
+        private static (EdVector3, EdVector3) GetBoundsByPosition(Sample[] samples, int samplesCount)
         {
             double minX = double.PositiveInfinity;
             double minY = double.PositiveInfinity;
@@ -158,8 +199,9 @@ namespace ElectronDynamics.Visualization
             double maxX = double.NegativeInfinity;
             double maxY = double.NegativeInfinity;
             double maxZ = double.NegativeInfinity;
-            foreach (var sample in samples)
+            for (int i = 0; i < samplesCount; ++i)
             {
+                var sample = samples[i];
                 var position = sample.Position;
                 // min
                 if (position.X < minX)

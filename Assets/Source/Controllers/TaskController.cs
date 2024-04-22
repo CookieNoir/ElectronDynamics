@@ -4,6 +4,7 @@ using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading;
 using UnityEngine;
+using UnityEngine.Events;
 
 namespace ElectronDynamics.Controllers
 {
@@ -13,7 +14,9 @@ namespace ElectronDynamics.Controllers
         [SerializeField] private SampleDrawerHandler _sampleDrawerHandler;
         [SerializeField, Min(0)] private int _iterationsStep = 1;
         [SerializeField] private int _randomSeed = 12345;
-        private ConcurrentStack<Sample[]> _samples = new ConcurrentStack<Sample[]>();
+        [field: SerializeField] public UnityEvent OnTaskStarted { get; private set; }
+        [field: SerializeField] public UnityEvent OnTaskEnded { get; private set; }
+        private ConcurrentQueue<Sample[]> _samples = new ConcurrentQueue<Sample[]>();
         private readonly CancellationTokenSource _tokenSource = new CancellationTokenSource();
         private CancellationToken _token;
 
@@ -31,9 +34,13 @@ namespace ElectronDynamics.Controllers
         {
             var variables = _variablesController.GetVariables();
             _token = _tokenSource.Token;
-            var task = new ElectronDynamicsTask(variables, _token, saveIntermediateResults, _iterationsStep, _samples.Push, _randomSeed);
+            var task = new ElectronDynamicsTask(variables, _token, saveIntermediateResults, _iterationsStep, _samples.Enqueue, _randomSeed);
+            Debug.Log($"{gameObject.name}: Task started", gameObject);
+            OnTaskStarted.Invoke();
             var result = await System.Threading.Tasks.Task.Run(task.Execute);
-            _sampleDrawerHandler.DrawSamples(result.Samples.Last());
+            Debug.Log($"{gameObject.name}: Task ended", gameObject);
+            OnTaskEnded.Invoke();
+            _samples.Enqueue(result.Samples.Last());
         }
 
         public void StopTask()
@@ -47,16 +54,20 @@ namespace ElectronDynamics.Controllers
 
         private void Update()
         {
-            if (_samples.TryPop(out var samples))
+            if (_samples.TryDequeue(out var samples))
             {
                 _sampleDrawerHandler.DrawSamples(samples);
-                _samples.Clear();
             }
         }
 
         private void Dispose()
         {
             _tokenSource.Dispose();
+            _samples.Clear();
+        }
+
+        private void OnDisable()
+        {
             _samples.Clear();
         }
 

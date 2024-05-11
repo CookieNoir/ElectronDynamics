@@ -12,9 +12,9 @@ namespace ElectronDynamics.Task
         public readonly IReadOnlyList<Sample[]> Samples;
 
         public EdTaskResult(EdVariables variables,
-            double[] masses, 
-            double[] charges, 
-            bool containsIntermediateResults, 
+            double[] masses,
+            double[] charges,
+            bool containsIntermediateResults,
             int iterationsPassed,
             IReadOnlyList<Sample[]> samples)
         {

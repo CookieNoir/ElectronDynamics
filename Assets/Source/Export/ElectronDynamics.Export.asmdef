@@ -1,0 +1,16 @@
+{
+    "name": "ElectronDynamics.Export",
+    "rootNamespace": "ElectronDynamics.Export",
+    "references": [
+        "GUID:4717350c8c8a48d4895ad78d138828e4"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

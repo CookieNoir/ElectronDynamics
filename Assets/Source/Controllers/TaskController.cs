@@ -76,7 +76,7 @@ namespace ElectronDynamics.Controllers
                 return;
             }
             _isRunning = true;
-            var variables = _variablesController.GetVariables();
+            var variables = _variablesController.Variables;
             _token = _tokenSource.Token;
             var tasks = new List<System.Threading.Tasks.Task<EdTaskResult>>();
             var mainTask = System.Threading.Tasks.Task.Factory.StartNew(GetEdTask(variables, saveIntermediateResults, _samples.Enqueue).Execute);

@@ -116,10 +116,11 @@ namespace ElectronDynamics.Task
         private EdVector3 GetVectorB(EdVector3 position)
         {
             double z0 = _variables.MagnetPositionZ;
-            double multiplier = Math.Exp(Math.Abs(position.Z - z0) / z0) - 1.0;
-            EdVector3 b = new EdVector3(multiplier * position.X, multiplier * position.Y, position.Z - z0);
+            double diff = position.Z - z0;
+            double multiplier = 1.0d - Math.Exp(-Math.Abs(diff));
+            EdVector3 b = new EdVector3(multiplier * position.X, multiplier * position.Y, 1.0d);
             double bNorm = b.Magnitude();
-            double coefB = _variables.MagnetBMax * Math.Exp(-(position.Z - z0) / z0) / bNorm;
+            double coefB = (_variables.MagnetBMax / (diff * diff * diff + 1.0d)) / bNorm;
             return coefB * b;
         }
 

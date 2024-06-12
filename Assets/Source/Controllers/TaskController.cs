@@ -22,7 +22,7 @@ namespace ElectronDynamics.Controllers
         [field: SerializeField] public UnityEvent OnTaskEnded { get; private set; }
         [field: SerializeField] public UnityEvent<EdTaskResult> OnEdTaskResultReceived { get; private set; }
         private ConcurrentQueue<Sample[]> _samples = new ConcurrentQueue<Sample[]>();
-        private readonly CancellationTokenSource _tokenSource = new CancellationTokenSource();
+        private CancellationTokenSource _tokenSource;
         private CancellationToken _token;
         private bool _isRunning;
 
@@ -77,6 +77,11 @@ namespace ElectronDynamics.Controllers
             }
             _isRunning = true;
             var variables = _variablesController.Variables;
+            if (_tokenSource != null)
+            {
+                CancelAndDisposeToken();
+            }
+            _tokenSource = new CancellationTokenSource();
             _token = _tokenSource.Token;
             var tasks = new List<System.Threading.Tasks.Task<EdTaskResult>>();
             var mainTask = System.Threading.Tasks.Task.Factory.StartNew(GetEdTask(variables, saveIntermediateResults, _samples.Enqueue).Execute);
@@ -101,11 +106,19 @@ namespace ElectronDynamics.Controllers
 
         public void StopTask()
         {
-            if (!_token.CanBeCanceled)
+            if (_tokenSource == null ||
+                !_token.CanBeCanceled)
             {
                 return;
             }
+            CancelAndDisposeToken();
+        }
+
+        private void CancelAndDisposeToken()
+        {
             _tokenSource.Cancel();
+            _tokenSource.Dispose();
+            _tokenSource = null;
         }
 
         private void Update()
@@ -118,7 +131,10 @@ namespace ElectronDynamics.Controllers
 
         private void Dispose()
         {
-            _tokenSource.Dispose();
+            if (_tokenSource != null)
+            {
+                CancelAndDisposeToken();
+            }
             _samples.Clear();
         }
 
